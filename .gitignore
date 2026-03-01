@@ -1,6 +1,12 @@
 # Prerequisites
 *.d
 
+
+*.txt 
+*.bin
+*.ppm 
+
+
 compressor
 silesia.tar 
 
