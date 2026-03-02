@@ -3,7 +3,7 @@ TARGET ?= compressor
 
 # Compilador
 CXX = g++
-CXXFLAGS = -std=c++11 -Wall -Wextra -O2 -Iinclude
+CXXFLAGS = -std=c++17 -Wall -Wextra -O3 -Iinclude
 LDFLAGS = -larchive
 
 # Diretórios

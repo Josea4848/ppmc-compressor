@@ -8,7 +8,7 @@
 
 static void compress(std::ifstream &in, BitOutputStream &out, int order);
 static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
-                        uint32_t symbol);
+                        uint16_t symbol);
 
 int main(int argc, char *argv[]) {
 
@@ -72,33 +72,31 @@ static void compress(std::ifstream &in, BitOutputStream &out, int order) {
 }
 
 static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
-                        uint32_t symbol) {
+                        uint16_t symbol) {
   const std::string history = ppm_model.getHistory();
 
   // Percorre tabelas até k = 0
   for (int _order = history.size(); _order >= 0; _order--) {
     const std::string subctx = history.substr(0, _order);
 
-    std::vector<uint32_t> *model_frequences = ppm_model.findModelIt(subctx);
+    auto model_frequences_it = ppm_model.findModelIt(subctx);
 
     // Verifica se o modelo k = _order existe
-    if (model_frequences == nullptr) {
+    if (model_frequences_it == ppm_model.getModel()->end()) {
       continue;
     }
 
     // Se símbolo estiver no modelo
-    if ((*model_frequences)[symbol] && symbol != 256) {
-      encoder.write(SimpleFrequencyTable(*model_frequences), symbol);
+    if (model_frequences_it->second[symbol] && symbol != 256) {
+      encoder.write(SimpleFrequencyTable(model_frequences_it->second), symbol);
       return;
     }
     // Codificar com rô
     else {
-      encoder.write(SimpleFrequencyTable(*model_frequences), RO);
-      // std::cout << "Codificado com rô" << std::endl;
+      encoder.write(SimpleFrequencyTable(model_frequences_it->second), RO);
     }
   }
 
   // Modelo de ignorância absoluta
   encoder.write(*ppm_model.getInitialModelIt(), symbol);
-  // std::cout << "Modelo de ignorância utilizado\n";
 }

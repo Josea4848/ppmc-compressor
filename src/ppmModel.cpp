@@ -1,26 +1,15 @@
 #include "../include/ppm_model.hpp"
-#include <iostream>
 
-PpmModel::PpmModel(int order) : equal_probs(std::vector<uint32_t>(257, 1)) {
+PpmModel::PpmModel(int &order) {
   this->order = order;
   this->history = "";
+  this->equal_probs = new SimpleFrequencyTable(std::vector<uint32_t>(257, 1));
 }
 
-void PpmModel::update(uint32_t symb) {
-  // std::cout << "============================\n";
-  // std::cout << "Simbolo:" << (char)symb << std::endl;
-  // std::cout << "Ctx: " << this->history << std::endl;
-
+void PpmModel::update(const uint16_t &symb) {
   // ATUALIZA K = - 1
-  if (equal_probs.get(symb)) {
-    equal_probs.set(symb, 0);
-    // std::cout << "Atualiza modelo k = -1\n";
-
-    for (uint32_t symbol = 0; symbol < equal_probs.getSymbolLimit(); ++symbol) {
-      // std::cout << "Símbolo " << (char)symbol << " = "
-      // << equal_probs.get(symbol) << " ";
-    }
-    // std::cout << "\n";
+  if (equal_probs->get(symb)) {
+    equal_probs->set(symb, 0);
   }
 
   // Atualiza k >= 0
@@ -44,26 +33,12 @@ void PpmModel::update(uint32_t symb) {
       this->model[subctx][symb]++;
       this->model[subctx][RO]++;
     }
-
-    // std::cout << "Modelo k = " << _order << " atualizado\n";
-    // for (int i = 0; i < this->model[subctx].size(); i++) {
-    //   std::cout << "S: " << char(i) << " Freq: " << this->model[subctx][i]
-    //             << " | ";
-    // }
-
-    // std::cout << std::endl;
   }
-
-  // std::cout << "Modelos atualizados\n";
-
-  // std::cout << "contexto: " << this->history << std::endl;
 
   // Atualiza contexto
   if (this->history.size() == this->order) {
-    this->history.pop_back(); // remove último
+    this->history.pop_back();
   }
 
-  this->history.insert(this->history.begin(), symb); // insere no início
-
-  // std::cout << "Atualização completa finalizada\n";
+  this->history.insert(this->history.begin(), symb);
 }

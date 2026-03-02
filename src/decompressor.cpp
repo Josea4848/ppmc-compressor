@@ -3,11 +3,9 @@
 #include "../include/BitIoStream.hpp"
 #include "../include/FrequencyTable.hpp"
 #include "../include/ppm_model.hpp"
-#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <limits>
-#include <thread>
 
 static void decompress(BitInputStream &in, std::ostream &out, int order);
 uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder);
@@ -87,15 +85,15 @@ uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder) {
   for (int _order = history.size(); _order >= 0; _order--) {
     const std::string subctx = history.substr(0, _order);
 
-    std::vector<uint32_t> *model_frequences = ppm_model.findModelIt(subctx);
+    const auto model_frequences_it = ppm_model.findModelIt(subctx);
 
     // Verifica se o modelo k = _order existe
-    if (model_frequences == nullptr) {
+    if (model_frequences_it == ppm_model.getModel()->end()) {
       continue;
     }
 
     const uint32_t symbol =
-        decoder.read(SimpleFrequencyTable(*model_frequences));
+        decoder.read(SimpleFrequencyTable(model_frequences_it->second));
 
     // Se símbolo estiver no modelo
     if (symbol < 256) {
