@@ -6,7 +6,7 @@
 *.bin
 *.ppm 
 
-
+decompressor
 compressor
 silesia.tar 
 
