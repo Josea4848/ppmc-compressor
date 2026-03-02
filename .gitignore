@@ -10,6 +10,7 @@ decompressor
 compressor
 silesia.tar 
 
+
 # Compiled Object files
 *.slo
 *.lo
