@@ -3,9 +3,11 @@
 #include "../include/BitIoStream.hpp"
 #include "../include/FrequencyTable.hpp"
 #include "../include/ppm_model.hpp"
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <thread>
 
 static void decompress(BitInputStream &in, std::ostream &out, int order);
 uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder);
@@ -64,7 +66,10 @@ static void decompress(BitInputStream &in, std::ostream &out, int order) {
   // Enquanto houver símbolos
   while (true) {
     uint32_t symbol = decodeModel(ppm_model, decoder);
-    // std::cout << (char)symbol << std::endl;
+    std::cout << "Símbolo decodificado: " << (char)symbol
+              << " código: " << symbol << std::endl;
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
     if (symbol == 256)
       break;
@@ -85,15 +90,15 @@ uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder) {
   for (int _order = history.size(); _order >= 0; _order--) {
     const std::string subctx = history.substr(0, _order);
 
-    const auto model_frequences_it = ppm_model.findModelIt(subctx);
+    const auto model_frequencies = ppm_model.findModelIt(subctx);
 
     // Verifica se o modelo k = _order existe
-    if (model_frequences_it == ppm_model.getModel()->end()) {
+    if (!model_frequencies) {
       continue;
     }
 
-    const uint32_t symbol =
-        decoder.read(SimpleFrequencyTable(model_frequences_it->second));
+    const uint32_t symbol = decoder.read(
+        SimpleFrequencyTable(createFrequencyTable(model_frequencies)));
 
     // Se símbolo estiver no modelo
     if (symbol < 256) {

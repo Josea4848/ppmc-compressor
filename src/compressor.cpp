@@ -3,12 +3,13 @@
 #include "../include/BitIoStream.hpp"
 #include "../include/FrequencyTable.hpp"
 #include "../include/ppm_model.hpp"
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 
 static void compress(std::ifstream &in, BitOutputStream &out, int order);
 static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
-                        uint16_t symbol);
+                        uint32_t symbol);
 
 int main(int argc, char *argv[]) {
 
@@ -32,7 +33,7 @@ int main(int argc, char *argv[]) {
   }
 
   // Configuração de stream de saída
-  const std::string ppm_ext = ".ppm";
+  const std::string ppm_ext = ".ppmc";
   const std::string output_file = argv[1] + ppm_ext;
   std::ofstream out(output_file, std::ios::binary);
   BitOutputStream bout(out);
@@ -60,10 +61,14 @@ static void compress(std::ifstream &in, BitOutputStream &out, int order) {
       break;
 
     // Codifica com modelo adequado
+    std::cout << "-------------------------------\n";
+    std::cout << "| Início de codificação\n";
     encodeModel(ppm_model, encoder, symbol);
+    std::cout << "| Símbolo codificado\n";
 
     // Atualiza modelo
     ppm_model.update(symbol);
+    std::cout << "-------------------------------\n";
   };
 
   // Adiciona EOF
@@ -72,31 +77,46 @@ static void compress(std::ifstream &in, BitOutputStream &out, int order) {
 }
 
 static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
-                        uint16_t symbol) {
+                        uint32_t symbol) {
   const std::string history = ppm_model.getHistory();
+  std::cout << "Codificando símbolo: " << symbol << " (char): " << char(symbol)
+            << std::endl;
 
   // Percorre tabelas até k = 0
   for (int _order = history.size(); _order >= 0; _order--) {
+
     const std::string subctx = history.substr(0, _order);
 
-    auto model_frequences_it = ppm_model.findModelIt(subctx);
+    std::cout << "Tentando modelo k = " << _order
+              << " - Subcontexto: " << subctx << std::endl;
+
+    auto model_it = ppm_model.findModelIt(subctx);
 
     // Verifica se o modelo k = _order existe
-    if (model_frequences_it == ppm_model.getModel()->end()) {
+    if (!model_it) {
+      std::cout << "Modelo k = " << _order << std::endl;
       continue;
     }
 
     // Se símbolo estiver no modelo
-    if (model_frequences_it->second[symbol] && symbol != 256) {
-      encoder.write(SimpleFrequencyTable(model_frequences_it->second), symbol);
+    if (std::find_if(model_it->begin(), model_it->end(),
+                     [&](const contextItem &item) {
+                       return item.symb == symbol;
+                     }) != model_it->end() &&
+        symbol != RO) {
+      std::cout << "Codificado com o modelo k = " << _order << std::endl;
+      encoder.write(SimpleFrequencyTable(createFrequencyTable(model_it)),
+                    symbol);
       return;
     }
     // Codificar com rô
     else {
-      encoder.write(SimpleFrequencyTable(model_frequences_it->second), RO);
+      std::cout << "Rô emitido no modelo k =" << _order << std::endl;
+      encoder.write(SimpleFrequencyTable(createFrequencyTable(model_it)), RO);
     }
   }
 
   // Modelo de ignorância absoluta
+  std::cout << "Codificado com modelo k = -1\n";
   encoder.write(*ppm_model.getInitialModelIt(), symbol);
 }

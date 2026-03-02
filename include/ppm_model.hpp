@@ -1,28 +1,37 @@
 #pragma once
 #include "../include/FrequencyTable.hpp"
+#include <algorithm>
+#include <list>
 #include <map>
 #include <string>
-#include <vector>
 #define RO 256
+
+struct contextItem {
+  uint32_t symb;
+  uint32_t freq;
+};
 
 class PpmModel {
 private:
-  std::map<std::string, std::vector<u_int32_t>> model;
+  std::map<std::string, std::list<contextItem>> model;
   SimpleFrequencyTable *equal_probs;
   std::string history;
   int order;
 
 public:
   PpmModel(int &order);
-  void update(const uint16_t &symb);
+  void update(const uint32_t &symb);
   inline int getOrder() { return order; }
   inline std::string getHistory() { return history; }
   inline SimpleFrequencyTable *getInitialModelIt() { return equal_probs; };
-  inline std::map<std::string, std::vector<u_int32_t>> *getModel() {
+  inline std::map<std::string, std::list<contextItem>> *getModel() {
     return &model;
   };
-  inline std::map<std::string, std::vector<u_int32_t>>::iterator
-  findModelIt(std::string subctx) {
-    return this->model.find(subctx);
+  inline std::list<contextItem> *findModelIt(std::string subctx) {
+    if (this->model.find(subctx) == this->model.end())
+      return nullptr;
+    return &model[subctx];
   }
 };
+
+std::vector<uint32_t> createFrequencyTable(std::list<contextItem> *freqs);
