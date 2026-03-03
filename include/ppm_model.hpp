@@ -1,13 +1,13 @@
 #pragma once
 #include "../include/FrequencyTable.hpp"
-#include <map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #define RO 256
 
 class PpmModel {
 private:
-  std::map<std::string, std::vector<u_int32_t>> model;
+  std::unordered_map<std::string, std::vector<u_int32_t>> model;
   SimpleFrequencyTable *equal_probs;
   std::string history;
   int order;
@@ -18,10 +18,10 @@ public:
   inline int getOrder() { return order; }
   inline std::string getHistory() { return history; }
   inline SimpleFrequencyTable *getInitialModelIt() { return equal_probs; };
-  inline std::map<std::string, std::vector<u_int32_t>> *getModel() {
+  inline std::unordered_map<std::string, std::vector<u_int32_t>> *getModel() {
     return &model;
   };
-  inline std::map<std::string, std::vector<u_int32_t>>::iterator
+  inline std::unordered_map<std::string, std::vector<u_int32_t>>::iterator
   findModelIt(std::string subctx) {
     return this->model.find(subctx);
   }

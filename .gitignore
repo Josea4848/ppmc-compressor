@@ -9,6 +9,7 @@
 decompressor
 compressor
 silesia.tar 
+*.ppmc
 
 
 # Compiled Object files
