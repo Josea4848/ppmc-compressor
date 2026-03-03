@@ -3,6 +3,7 @@
 #include "../include/BitIoStream.hpp"
 #include "../include/FrequencyTable.hpp"
 #include "../include/ppm_model.hpp"
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -11,6 +12,8 @@ static void decompress(BitInputStream &in, std::ostream &out, int order);
 uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder);
 
 int main(int argc, char *argv[]) {
+  // Início de medição
+  auto start = std::chrono::high_resolution_clock::now();
 
   if (argc < 2) {
     std::cerr << "Usage: ./decompress file.ppm"
@@ -48,6 +51,12 @@ int main(int argc, char *argv[]) {
 
   try {
     decompress(bin, out, order);
+
+    // Fim de execução
+    auto end = std::chrono::high_resolution_clock::now();
+
+    auto duration = std::chrono::duration<double>(end - start);
+    std::cout << "Tempo de execução: " << duration.count() << " s\n";
     return EXIT_SUCCESS;
   }
 
@@ -64,7 +73,6 @@ static void decompress(BitInputStream &in, std::ostream &out, int order) {
   // Enquanto houver símbolos
   while (true) {
     uint32_t symbol = decodeModel(ppm_model, decoder);
-    // std::cout << (char)symbol << std::endl;
 
     if (symbol == 256)
       break;

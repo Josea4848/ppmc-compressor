@@ -3,6 +3,7 @@
 #include "../include/BitIoStream.hpp"
 #include "../include/FrequencyTable.hpp"
 #include "../include/ppm_model.hpp"
+#include <chrono>
 #include <fstream>
 #include <iostream>
 
@@ -11,6 +12,8 @@ static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
                         uint16_t symbol);
 
 int main(int argc, char *argv[]) {
+  // Início de medição
+  auto start = std::chrono::high_resolution_clock::now();
 
   if (argc < 2) {
     std::cerr << "Usage: ./compress model_order"
@@ -40,6 +43,12 @@ int main(int argc, char *argv[]) {
   try {
     compress(in, bout, order);
     bout.finish();
+
+    // Fim de execução
+    auto end = std::chrono::high_resolution_clock::now();
+
+    auto duration = std::chrono::duration<double>(end - start);
+    std::cout << "Tempo de execução: " << duration.count() << " s\n";
     return EXIT_SUCCESS;
   }
 
@@ -56,6 +65,7 @@ static void compress(std::ifstream &in, BitOutputStream &out, int order) {
   // Enquanto houver símbolos
   while (true) {
     uint32_t symbol = in.get();
+
     if (symbol == std::char_traits<char>::eof())
       break;
 
@@ -73,8 +83,8 @@ static void compress(std::ifstream &in, BitOutputStream &out, int order) {
 
 static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
                         uint16_t symbol) {
-  const std::string history = ppm_model.getHistory();
 
+  const std::string history = ppm_model.getHistory();
   // Percorre tabelas até k = 0
   for (int _order = history.size(); _order >= 0; _order--) {
     const std::string subctx = history.substr(0, _order);
