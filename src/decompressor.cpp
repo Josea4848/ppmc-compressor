@@ -10,6 +10,9 @@
 
 static void decompress(BitInputStream &in, std::ostream &out, int order);
 uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder);
+void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
+                  std::vector<uint32_t> &buffer);
+std::vector<uint32_t> buffer(257, 0);
 
 int main(int argc, char *argv[]) {
   // Início de medição
@@ -72,12 +75,13 @@ static void decompress(BitInputStream &in, std::ostream &out, int order) {
 
   // Enquanto houver símbolos
   while (true) {
-    uint32_t symbol = decodeModel(ppm_model, decoder);
+    uint16_t symbol = decodeModel(ppm_model, decoder);
 
     if (symbol == 256)
       break;
 
     // Atualiza modelo
+
     ppm_model.update(symbol);
     int b = static_cast<int>(symbol);
     if (std::numeric_limits<char>::is_signed)
@@ -91,17 +95,17 @@ uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder) {
 
   // Percorre tabelas até k = 0
   for (int _order = history.size(); _order >= 0; _order--) {
-    const std::string subctx = history.substr(0, _order);
+    std::string_view subctx(history.data(), _order);
 
-    const auto model_frequences_it = ppm_model.findModelIt(subctx);
+    auto model_frequences_it = ppm_model.findModelIt(std::string(subctx));
 
     // Verifica se o modelo k = _order existe
     if (model_frequences_it == ppm_model.getModel()->end()) {
       continue;
     }
 
-    const uint32_t symbol =
-        decoder.read(SimpleFrequencyTable(model_frequences_it->second));
+    hashToVector(model_frequences_it.value(), buffer);
+    const uint32_t symbol = decoder.read(SimpleFrequencyTable(buffer));
 
     // Se símbolo estiver no modelo
     if (symbol < 256) {
@@ -111,4 +115,13 @@ uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder) {
 
   // Modelo de ignorância absoluta
   return decoder.read(*ppm_model.getInitialModelIt());
+}
+
+void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
+                  std::vector<uint32_t> &buffer) {
+  std::fill(buffer.begin(), buffer.end(), 0);
+
+  for (const auto &[symbol, freq] : freq) {
+    buffer[symbol] = freq;
+  }
 }

@@ -6,10 +6,16 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <unordered_map>
 
 static void compress(std::ifstream &in, BitOutputStream &out, int order);
 static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
                         uint16_t symbol);
+void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
+                  std::vector<uint32_t> &buffer);
+;
+std::vector<uint32_t> buffer(257, 0);
+// SimpleFrequencyTable frequencyTable;
 
 int main(int argc, char *argv[]) {
   // Início de medição
@@ -87,26 +93,39 @@ static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
   const std::string history = ppm_model.getHistory();
   // Percorre tabelas até k = 0
   for (int _order = history.size(); _order >= 0; _order--) {
-    const std::string subctx = history.substr(0, _order);
+    std::string_view subctx(history.data(), _order);
 
-    auto model_frequences_it = ppm_model.findModelIt(subctx);
+    auto model_frequences_it = ppm_model.findModelIt(std::string(subctx));
 
     // Verifica se o modelo k = _order existe
     if (model_frequences_it == ppm_model.getModel()->end()) {
       continue;
     }
 
+    hashToVector(model_frequences_it.value(), buffer);
+
     // Se símbolo estiver no modelo
-    if (model_frequences_it->second[symbol] && symbol != 256) {
-      encoder.write(SimpleFrequencyTable(model_frequences_it->second), symbol);
+    if (model_frequences_it.value().find(symbol) !=
+            model_frequences_it.value().end() &&
+        symbol != 256) {
+      encoder.write(SimpleFrequencyTable(buffer), symbol);
       return;
     }
     // Codificar com rô
     else {
-      encoder.write(SimpleFrequencyTable(model_frequences_it->second), RO);
+      encoder.write(SimpleFrequencyTable(buffer), RO);
     }
   }
 
   // Modelo de ignorância absoluta
   encoder.write(*ppm_model.getInitialModelIt(), symbol);
+}
+
+void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
+                  std::vector<uint32_t> &buffer) {
+  std::fill(buffer.begin(), buffer.end(), 0);
+
+  for (const auto &[symbol, freq] : freq) {
+    buffer[symbol] = freq;
+  }
 }
