@@ -104,7 +104,7 @@ uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder) {
       continue;
     }
 
-    hashToVector(model_frequences_it.value(), buffer);
+    hashToVector(model_frequences_it->second, buffer);
     const uint32_t symbol = decoder.read(SimpleFrequencyTable(buffer));
 
     // Se símbolo estiver no modelo

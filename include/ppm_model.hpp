@@ -1,11 +1,11 @@
 #pragma once
 #include "../external/unordered_dense/include/ankerl/unordered_dense.h"
 #include "../include/FrequencyTable.hpp"
-#include "trie.h"
 #include <string>
 #define RO 256
 
-typedef trie::trie_map<char, ankerl::unordered_dense::map<uint16_t, uint32_t>>
+typedef ankerl::unordered_dense::map<
+    std::string, ankerl::unordered_dense::map<uint16_t, uint32_t>>
     Model;
 
 class PpmModel {

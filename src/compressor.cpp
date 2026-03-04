@@ -6,7 +6,6 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
-#include <unordered_map>
 
 static void compress(std::ifstream &in, BitOutputStream &out, int order);
 static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
@@ -102,11 +101,11 @@ static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
       continue;
     }
 
-    hashToVector(model_frequences_it.value(), buffer);
+    hashToVector(model_frequences_it->second, buffer);
 
     // Se símbolo estiver no modelo
-    if (model_frequences_it.value().find(symbol) !=
-            model_frequences_it.value().end() &&
+    if (model_frequences_it->second.find(symbol) !=
+            model_frequences_it->second.end() &&
         symbol != 256) {
       encoder.write(SimpleFrequencyTable(buffer), symbol);
       return;

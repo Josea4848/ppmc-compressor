@@ -20,15 +20,14 @@ void PpmModel::update(const uint16_t &symb) {
 
     // Verifica se subcontexto não existe
     if (this->model->find(subctx) == this->model->end()) {
-
       // Cria tabela de frequências
-      this->model->insert(subctx, {});
       (*this->model)[subctx][symb] = 1;
       (*this->model)[subctx][RO] = 1;
 
     }
     // Se existir para o contexto, é incrementado
-    else if ((*this->model)[subctx][symb]) {
+    else if ((*this->model)[subctx].find(symb) !=
+             (*this->model)[subctx].end()) {
       (*this->model)[subctx][symb]++;
     }
     // Se existir e não tiver o símbolo
