@@ -72,6 +72,9 @@ static void compress(std::ifstream &in, BitOutputStream &out, int order) {
   while (true) {
     uint32_t symbol = in.get();
 
+    // std::cout << "Codificação do símbolo: " << (char)symbol
+    //           << " cód: " << symbol << std::endl;
+
     if (symbol == std::char_traits<char>::eof())
       break;
 
@@ -113,7 +116,7 @@ static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
     }
     // Codificar com rô
     else {
-      hashToVector(model_frequences_it->second, buffer, symbol, true);
+      hashToVector(model_frequences_it->second, buffer, RO, true);
       encoder.write(SimpleFrequencyTable(buffer), RO);
     }
   }
@@ -132,7 +135,7 @@ void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
 
     // Se o símbolo (que não o a ser codificado) estiver na tabela e a exclusão
     // for habilitada
-    if (symbol != RO && set_exclusion) {
+    if (_symbol != RO && set_exclusion) {
       excluded_buffer[_symbol] = false;
     }
   }

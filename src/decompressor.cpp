@@ -84,7 +84,6 @@ static void decompress(BitInputStream &in, std::ostream &out, int order) {
       break;
 
     // Atualiza modelo
-
     ppm_model.update(symbol);
     int b = static_cast<int>(symbol);
     if (std::numeric_limits<char>::is_signed)
