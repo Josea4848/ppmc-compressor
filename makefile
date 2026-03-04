@@ -4,13 +4,8 @@ TARGET ?= compressor
 # Compilador
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -O3 -Iinclude
+CXXFLAGS += -O3
 
-
-ifeq ($(DEBUG),1)
-    CXXFLAGS += -g -O0 -DDEBUG
-else
-    CXXFLAGS += -O3
-endif
 
 # Diretórios
 SRC_DIR = src

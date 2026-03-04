@@ -10,9 +10,10 @@
 static void compress(std::ifstream &in, BitOutputStream &out, int order);
 static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
                         uint16_t symbol);
+std::vector<bool> excluded_buffer(257, 1);
 void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
-                  std::vector<uint32_t> &buffer);
-;
+                  std::vector<uint32_t> &buffer, const uint16_t &symbol,
+                  const bool set_exclusion);
 std::vector<uint32_t> buffer(257, 0);
 // SimpleFrequencyTable frequencyTable;
 
@@ -40,7 +41,7 @@ int main(int argc, char *argv[]) {
   }
 
   // Configuração de stream de saída
-  const std::string ppm_ext = ".ppm";
+  const std::string ppm_ext = ".ppmc";
   const std::string output_file = argv[1] + ppm_ext;
   std::ofstream out(output_file, std::ios::binary);
   BitOutputStream bout(out);
@@ -88,6 +89,7 @@ static void compress(std::ifstream &in, BitOutputStream &out, int order) {
 
 static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
                         uint16_t symbol) {
+  std::fill(excluded_buffer.begin(), excluded_buffer.end(), 1);
 
   const std::string history = ppm_model.getHistory();
   // Percorre tabelas até k = 0
@@ -101,30 +103,37 @@ static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
       continue;
     }
 
-    hashToVector(model_frequences_it->second, buffer);
-
     // Se símbolo estiver no modelo
     if (model_frequences_it->second.find(symbol) !=
             model_frequences_it->second.end() &&
-        symbol != 256) {
+        symbol != RO) {
+      hashToVector(model_frequences_it->second, buffer, symbol, false);
       encoder.write(SimpleFrequencyTable(buffer), symbol);
       return;
     }
     // Codificar com rô
     else {
+      hashToVector(model_frequences_it->second, buffer, symbol, true);
       encoder.write(SimpleFrequencyTable(buffer), RO);
     }
   }
 
-  // Modelo de ignorância absoluta
+  //  Modelo de ignorância absoluta
   encoder.write(*ppm_model.getInitialModelIt(), symbol);
 }
 
 void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
-                  std::vector<uint32_t> &buffer) {
+                  std::vector<uint32_t> &buffer, const uint16_t &symbol,
+                  const bool set_exclusion) {
   std::fill(buffer.begin(), buffer.end(), 0);
 
-  for (const auto &[symbol, freq] : freq) {
-    buffer[symbol] = freq;
+  for (const auto &[_symbol, freq] : freq) {
+    buffer[_symbol] = freq * excluded_buffer[_symbol];
+
+    // Se o símbolo (que não o a ser codificado) estiver na tabela e a exclusão
+    // for habilitada
+    if (symbol != RO && set_exclusion) {
+      excluded_buffer[_symbol] = false;
+    }
   }
 }

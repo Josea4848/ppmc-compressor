@@ -12,7 +12,10 @@ static void decompress(BitInputStream &in, std::ostream &out, int order);
 uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder);
 void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
                   std::vector<uint32_t> &buffer);
+void setExclusion(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
+                  std::vector<bool> &excluded_buffer);
 std::vector<uint32_t> buffer(257, 0);
+std::vector<bool> excluded_buffer(257, 1);
 
 int main(int argc, char *argv[]) {
   // Início de medição
@@ -92,6 +95,7 @@ static void decompress(BitInputStream &in, std::ostream &out, int order) {
 
 uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder) {
   const std::string history = ppm_model.getHistory();
+  std::fill(excluded_buffer.begin(), excluded_buffer.end(), 1);
 
   // Percorre tabelas até k = 0
   for (int _order = history.size(); _order >= 0; _order--) {
@@ -111,6 +115,9 @@ uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder) {
     if (symbol < 256) {
       return symbol;
     }
+
+    // Rô emitido, e iniciando exclusão
+    setExclusion(model_frequences_it->second, excluded_buffer);
   }
 
   // Modelo de ignorância absoluta
@@ -122,6 +129,16 @@ void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
   std::fill(buffer.begin(), buffer.end(), 0);
 
   for (const auto &[symbol, freq] : freq) {
-    buffer[symbol] = freq;
+    buffer[symbol] = freq * excluded_buffer[symbol];
+  }
+}
+
+void setExclusion(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
+                  std::vector<bool> &excluded_buffer) {
+
+  for (const auto &[_symbol, freq] : freq) {
+    if (_symbol != RO) {
+      excluded_buffer[_symbol] = false;
+    }
   }
 }
