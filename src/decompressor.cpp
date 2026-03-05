@@ -137,7 +137,7 @@ void setExclusion(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
 
   for (const auto &[_symbol, freq] : freq) {
     if (_symbol != RO) {
-      excluded_buffer[_symbol] = false;
+      excluded_buffer[_symbol] = 0;
     }
   }
 }

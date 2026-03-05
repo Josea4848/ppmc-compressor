@@ -136,7 +136,7 @@ void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
     // Se o símbolo (que não o a ser codificado) estiver na tabela e a exclusão
     // for habilitada
     if (_symbol != RO && set_exclusion) {
-      excluded_buffer[_symbol] = false;
+      excluded_buffer[_symbol] = 0;
     }
   }
 }
