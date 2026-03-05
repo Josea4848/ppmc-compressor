@@ -51,7 +51,7 @@ void update_context(
     for(int j = std::min(i, static_cast<int>(msg.size())); j >= 0; j--) {
         // contexto
         std::string ctx_substr = msg.substr(msg.size()-j, j);
-        contextual_tables[j][ctx_substr][byte] += 1;
+        contextual_tables[j][ctx_substr][byte]++;
     }
 }
 
@@ -133,7 +133,7 @@ static void compress(std::ifstream &in, ArithmeticEncoder encoder, int k) {
             tuple_ctx_table = contextual_tables[j].find(ctx_substr);
 
             if(tuple_ctx_table == contextual_tables[j].end()) {
-                contextual_tables[j][ctx_substr][byte] += 1; // atualizando a tabela de frequências
+                contextual_tables[j][ctx_substr][byte]++; // atualizando a tabela de frequências
                 continue;
             }
 
@@ -171,7 +171,7 @@ static void compress(std::ifstream &in, ArithmeticEncoder encoder, int k) {
                 }
                 freqs[256] = 0;
 
-                ctx_table[byte] += 1; // atualizando a tabela de frequências
+                ctx_table[byte]++; // atualizando a tabela de frequências
                 continue;
             }
         
@@ -200,7 +200,7 @@ static void compress(std::ifstream &in, ArithmeticEncoder encoder, int k) {
             }
             freqs[256] = 0;
             
-            ctx_table[byte] += 1; // atualizando a tabela de frequências
+            ctx_table[byte]++; // atualizando a tabela de frequências
 
             break;
         }

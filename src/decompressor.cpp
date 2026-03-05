@@ -48,7 +48,7 @@ void update_context(
     for(int j = static_cast<int>(msg.size()); j >= 0; j--) {
         // contexto
         std::string ctx_substr = msg.substr(msg.size()-j, j);
-        contextual_tables[j][ctx_substr][byte] += 1;
+        contextual_tables[j][ctx_substr][byte]++;
     }
 }
 
