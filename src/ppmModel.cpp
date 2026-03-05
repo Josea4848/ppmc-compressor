@@ -17,24 +17,7 @@ void PpmModel::update(const uint16_t &symb) {
   // Atualiza k >= 0
   for (int _order = 0; _order <= this->history.size(); _order++) {
     const std::string subctx = this->history.substr(0, _order);
-
-    // Verifica se subcontexto não existe
-    if (this->model->find(subctx) == this->model->end()) {
-      // Cria tabela de frequências
-      (*this->model)[subctx][symb] = 1;
-      (*this->model)[subctx][RO] = 1;
-
-    }
-    // Se existir para o contexto, é incrementado
-    else if ((*this->model)[subctx].find(symb) !=
-             (*this->model)[subctx].end()) {
-      (*this->model)[subctx][symb]++;
-    }
-    // Se existir e não tiver o símbolo
-    else {
-      (*this->model)[subctx][symb] = 1;
-      (*this->model)[subctx][RO]++;
-    }
+    (*this->model)[subctx][symb]++;
   }
 
   // Atualiza contexto
@@ -45,6 +28,7 @@ void PpmModel::update(const uint16_t &symb) {
     this->history.insert(this->history.begin(), symb);
   }
 }
+
 void PpmModel::printModel(const std::string &subctx) {
 
   for (const auto &[symbol, freq] : (*this->model)[subctx]) {

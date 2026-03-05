@@ -15,7 +15,6 @@ void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
                   std::vector<uint32_t> &buffer, const uint16_t &symbol,
                   const bool set_exclusion);
 std::vector<uint32_t> buffer(257, 0);
-// SimpleFrequencyTable frequencyTable;
 
 int main(int argc, char *argv[]) {
   // Início de medição
@@ -72,9 +71,6 @@ static void compress(std::ifstream &in, BitOutputStream &out, int order) {
   while (true) {
     uint32_t symbol = in.get();
 
-    // std::cout << "Codificação do símbolo: " << (char)symbol
-    //           << " cód: " << symbol << std::endl;
-
     if (symbol == std::char_traits<char>::eof())
       break;
 
@@ -98,11 +94,11 @@ static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
   // Percorre tabelas até k = 0
   for (int _order = history.size(); _order >= 0; _order--) {
     std::string_view subctx(history.data(), _order);
-
     auto model_frequences_it = ppm_model.findModelIt(std::string(subctx));
 
     // Verifica se o modelo k = _order existe
     if (model_frequences_it == ppm_model.getModel()->end()) {
+
       continue;
     }
 
@@ -129,14 +125,16 @@ void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
                   std::vector<uint32_t> &buffer, const uint16_t &symbol,
                   const bool set_exclusion) {
   std::fill(buffer.begin(), buffer.end(), 0);
-
+  uint32_t counter = 0;
   for (const auto &[_symbol, freq] : freq) {
     buffer[_symbol] = freq * excluded_buffer[_symbol];
-
+    counter++;
     // Se o símbolo (que não o a ser codificado) estiver na tabela e a exclusão
     // for habilitada
     if (_symbol != RO && set_exclusion) {
       excluded_buffer[_symbol] = 0;
     }
   }
+
+  buffer[RO] = counter;
 }

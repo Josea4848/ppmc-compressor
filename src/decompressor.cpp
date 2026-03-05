@@ -84,6 +84,7 @@ static void decompress(BitInputStream &in, std::ostream &out, int order) {
       break;
 
     // Atualiza modelo
+
     ppm_model.update(symbol);
     int b = static_cast<int>(symbol);
     if (std::numeric_limits<char>::is_signed)
@@ -98,8 +99,8 @@ uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder) {
 
   // Percorre tabelas até k = 0
   for (int _order = history.size(); _order >= 0; _order--) {
-    std::string_view subctx(history.data(), _order);
 
+    std::string_view subctx(history.data(), _order);
     auto model_frequences_it = ppm_model.findModelIt(std::string(subctx));
 
     // Verifica se o modelo k = _order existe
@@ -111,7 +112,7 @@ uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder) {
     const uint32_t symbol = decoder.read(SimpleFrequencyTable(buffer));
 
     // Se símbolo estiver no modelo
-    if (symbol < 256) {
+    if (symbol < RO) {
       return symbol;
     }
 
@@ -126,16 +127,21 @@ uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder) {
 void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
                   std::vector<uint32_t> &buffer) {
   std::fill(buffer.begin(), buffer.end(), 0);
+  uint32_t counter = 0;
 
-  for (const auto &[symbol, freq] : freq) {
-    buffer[symbol] = freq * excluded_buffer[symbol];
+  for (const auto &[_symbol, freq] : freq) {
+    counter += 1;
+    buffer[_symbol] = freq * excluded_buffer[_symbol];
   }
+
+  buffer[RO] = counter;
 }
 
 void setExclusion(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
                   std::vector<bool> &excluded_buffer) {
 
   for (const auto &[_symbol, freq] : freq) {
+
     if (_symbol != RO) {
       excluded_buffer[_symbol] = 0;
     }
