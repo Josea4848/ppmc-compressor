@@ -34,6 +34,7 @@ int BitInputStream::read() {
 		throw std::logic_error("Assertion error");
 	numBitsRemaining--;
 	bitCount++;
+	// std::cout << bitCount << std::endl;
 	return (currentByte >> numBitsRemaining) & 1;
 }
 
@@ -60,6 +61,7 @@ void BitOutputStream::write(int b) {
 	currentByte = (currentByte << 1) | b;
 	numBitsFilled++;
 	bitCount++;
+	// std::cout << bitCount << std::endl;
 	if (numBitsFilled == 8) {
 		// Note: ostream.put() takes char, which may be signed/unsigned
 		if (std::numeric_limits<char>::is_signed)

@@ -54,4 +54,8 @@ void PpmModel::printModel(const std::string &subctx) {
 
 void PpmModel::reset() {
   this->model->clear();
+  this->model->rehash(0);
+  
+  delete this->equal_probs;
+  this->equal_probs = new SimpleFrequencyTable(std::vector<uint32_t>(257, 1));
 }
