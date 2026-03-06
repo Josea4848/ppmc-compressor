@@ -6,18 +6,16 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
-#include <thread>
 
-#define WINDOW 1000
-
+#define WINDOW 300000
 static void compress(std::ifstream &in, BitOutputStream &out, int order);
 static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
                         uint16_t symbol);
-std::vector<bool> excluded_buffer(257, 1);
+std::vector<bool> excluded_buffer(258, 1);
 void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
                   std::vector<uint32_t> &buffer, const uint16_t &symbol,
                   const bool set_exclusion);
-std::vector<uint32_t> buffer(257, 0);
+std::vector<uint32_t> buffer(258, 0);
 
 int main(int argc, char *argv[]) {
   // Início de medição
@@ -82,33 +80,35 @@ static void compress(std::ifstream &in, BitOutputStream &out, int order) {
 
     // Codifica com modelo adequado
     encodeModel(ppm_model, encoder, symbol);
+    // Atualiza modelo
+    ppm_model.update(symbol);
 
     symbol_count++;
     if (symbol_count % WINDOW == 0) {
 
-        uint64_t currentBits = out.getBitCount();
-        uint64_t current_window = currentBits - checkpoint_1;
-        uint64_t old_window = checkpoint_1 - checkpoint_2;
+      uint64_t currentBits = out.getBitCount();
+      uint64_t current_window = currentBits - checkpoint_1;
+      uint64_t old_window = checkpoint_1 - checkpoint_2;
 
-        double current_avg = (double) current_window / WINDOW;
-        double old_avg = (double) old_window / WINDOW;
+      double current_avg = (double)current_window / WINDOW;
+      double old_avg = (double)old_window / WINDOW;
 
-        double perc_diff = 0;
-        if(old_avg > 0) {
-          perc_diff = (current_avg - old_avg) / old_avg;
-        }
-        std::cout << "Janela: " << current_avg << " bits/símbolo\n";
-        
-        if(perc_diff > 0.5) {
-          ppm_model.reset();
-          std::this_thread::sleep_for(std::chrono::seconds(2));
-        }
-        checkpoint_2 = checkpoint_1;
-        checkpoint_1 = currentBits;
+      double perc_diff = 0;
+
+      if (old_avg > 0) {
+        perc_diff = (current_avg - old_avg) / old_avg;
+      }
+
+      if (perc_diff > 0.5) {
+
+        // 257 -> Indica reset
+        encodeModel(ppm_model, encoder, 257);
+        ppm_model.reset();
+      }
+
+      checkpoint_2 = checkpoint_1;
+      checkpoint_1 = currentBits;
     }
-
-    // Atualiza modelo
-    ppm_model.update(symbol);
   };
 
   // Adiciona EOF
@@ -128,7 +128,6 @@ static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
 
     // Verifica se o modelo k = _order existe
     if (model_frequences_it == ppm_model.getModel()->end()) {
-
       continue;
     }
 

@@ -8,7 +8,7 @@
 #include <iostream>
 #include <limits>
 
-#define WINDOW 1000
+#define WINDOW 300000
 
 static void decompress(BitInputStream &in, std::ostream &out, int order);
 uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder);
@@ -16,8 +16,8 @@ void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
                   std::vector<uint32_t> &buffer);
 void setExclusion(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
                   std::vector<bool> &excluded_buffer);
-std::vector<uint32_t> buffer(257, 0);
-std::vector<bool> excluded_buffer(257, 1);
+std::vector<uint32_t> buffer(258, 0);
+std::vector<bool> excluded_buffer(258, 1);
 
 int main(int argc, char *argv[]) {
   // Início de medição
@@ -84,26 +84,19 @@ static void decompress(BitInputStream &in, std::ostream &out, int order) {
   while (true) {
     uint16_t symbol = decodeModel(ppm_model, decoder);
 
-    if (symbol == 256)
+    // Atualiza modelo
+    ppm_model.update(symbol);
+
+    // 256 É utilizado para indicar EOF
+    if (symbol == 256) {
       break;
-
-    symbol_counter++;
-    if (symbol_counter % WINDOW == 0) {
-
-        uint64_t currentBits = in.getBitCount();
-        uint64_t windowBits = currentBits - last_checkpoint;
-
-        double avg = (double) windowBits / WINDOW;
-
-        std::cout << "Janela decode: "
-                  << avg << " bits/símbolo\n";
-
-        last_checkpoint = currentBits;
+    }
+    // 257 É utilizado para indicar reset
+    else if (symbol == 257) {
+      ppm_model.reset();
+      continue;
     }
 
-    // Atualiza modelo
-
-    ppm_model.update(symbol);
     int b = static_cast<int>(symbol);
     if (std::numeric_limits<char>::is_signed)
       b -= (b >> 7) << 8;

@@ -4,7 +4,7 @@
 PpmModel::PpmModel(int &order) {
   this->order = order;
   this->history = "";
-  this->equal_probs = new SimpleFrequencyTable(std::vector<uint32_t>(257, 1));
+  this->equal_probs = new SimpleFrequencyTable(std::vector<uint32_t>(258, 1));
   this->model = new Model();
 }
 
@@ -39,7 +39,7 @@ void PpmModel::printModel(const std::string &subctx) {
 void PpmModel::reset() {
   this->model->clear();
   this->model->rehash(0);
-  
+  this->history.clear();
   delete this->equal_probs;
-  this->equal_probs = new SimpleFrequencyTable(std::vector<uint32_t>(257, 1));
+  this->equal_probs = new SimpleFrequencyTable(std::vector<uint32_t>(258, 1));
 }
