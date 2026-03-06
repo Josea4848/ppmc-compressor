@@ -7,6 +7,8 @@
 #include <fstream>
 #include <iostream>
 
+#define WINDOW 1000
+
 static void compress(std::ifstream &in, BitOutputStream &out, int order);
 static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
                         uint16_t symbol);
@@ -67,6 +69,8 @@ int main(int argc, char *argv[]) {
 static void compress(std::ifstream &in, BitOutputStream &out, int order) {
   ArithmeticEncoder encoder(32, out);
   PpmModel ppm_model(order);
+  std::uint64_t symbol_count = 0;
+  std::uint64_t last_checkpoint = 0;
 
   // Enquanto houver símbolos
   while (true) {
@@ -80,6 +84,19 @@ static void compress(std::ifstream &in, BitOutputStream &out, int order) {
 
     // Codifica com modelo adequado
     encodeModel(ppm_model, encoder, symbol);
+
+    symbol_count++;
+    if (symbol_count % WINDOW == 0) {
+
+        uint64_t currentBits = out.getBitCount();
+        uint64_t windowBits = currentBits - last_checkpoint;
+
+        double avg = (double) windowBits / WINDOW;
+
+        std::cout << "Janela: " << avg << " bits/símbolo\n";
+        
+        last_checkpoint = currentBits;
+    }
 
     // Atualiza modelo
     ppm_model.update(symbol);
@@ -96,7 +113,7 @@ static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
 
   const std::string history = ppm_model.getHistory();
   // Percorre tabelas até k = 0
-  for (int _order = history.size(); _order >= 0; _order--) {
+  for (int _order = static_cast<int>(history.size()); _order >= 0; _order--) {
     std::string_view subctx(history.data(), _order);
 
     auto model_frequences_it = ppm_model.findModelIt(std::string(subctx));

@@ -3,7 +3,7 @@ TARGET ?= compressor
 
 # Compilador
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -O3 -Iinclude
+CXXFLAGS = -std=c++17 -Wall -Wextra -Iinclude
 CXXFLAGS += -O3
 
 

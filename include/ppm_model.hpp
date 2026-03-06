@@ -22,6 +22,7 @@ public:
   inline std::string getHistory() { return history; }
   inline SimpleFrequencyTable *getInitialModelIt() { return equal_probs; };
   inline Model *getModel() { return model; };
+  void reset();
   inline Model::iterator findModelIt(std::string subctx) {
     return this->model->find(subctx);
   }

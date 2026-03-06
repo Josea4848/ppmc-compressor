@@ -15,7 +15,8 @@
 BitInputStream::BitInputStream(std::istream &in) :
 	input(in),
 	currentByte(0),
-	numBitsRemaining(0) {}
+	numBitsRemaining(0),
+	bitCount(0) {}
 	
 	
 int BitInputStream::read() {
@@ -32,6 +33,7 @@ int BitInputStream::read() {
 	if (numBitsRemaining <= 0)
 		throw std::logic_error("Assertion error");
 	numBitsRemaining--;
+	bitCount++;
 	return (currentByte >> numBitsRemaining) & 1;
 }
 
@@ -48,7 +50,8 @@ int BitInputStream::readNoEof() {
 BitOutputStream::BitOutputStream(std::ostream &out) :
 	output(out),
 	currentByte(0),
-	numBitsFilled(0) {}
+	numBitsFilled(0),
+	bitCount(0) {}
 
 
 void BitOutputStream::write(int b) {
@@ -56,6 +59,7 @@ void BitOutputStream::write(int b) {
 		throw std::domain_error("Argument must be 0 or 1");
 	currentByte = (currentByte << 1) | b;
 	numBitsFilled++;
+	bitCount++;
 	if (numBitsFilled == 8) {
 		// Note: ostream.put() takes char, which may be signed/unsigned
 		if (std::numeric_limits<char>::is_signed)
@@ -70,4 +74,12 @@ void BitOutputStream::write(int b) {
 void BitOutputStream::finish() {
 	while (numBitsFilled != 0)
 		write(0);
+}
+
+std::uint64_t BitOutputStream::getBitCount() {
+    return bitCount;
+}
+
+std::uint64_t BitInputStream::getBitCount() {
+    return bitCount;
 }

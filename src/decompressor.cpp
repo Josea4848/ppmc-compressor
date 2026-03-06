@@ -8,6 +8,8 @@
 #include <iostream>
 #include <limits>
 
+#define WINDOW 1000
+
 static void decompress(BitInputStream &in, std::ostream &out, int order);
 uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder);
 void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
@@ -75,6 +77,8 @@ int main(int argc, char *argv[]) {
 static void decompress(BitInputStream &in, std::ostream &out, int order) {
   ArithmeticDecoder decoder(32, in);
   PpmModel ppm_model(order);
+  std::uint64_t last_checkpoint = 0;
+  int symbol_counter = 0;
 
   // Enquanto houver símbolos
   while (true) {
@@ -82,6 +86,20 @@ static void decompress(BitInputStream &in, std::ostream &out, int order) {
 
     if (symbol == 256)
       break;
+
+    symbol_counter++;
+    if (symbol_counter % WINDOW == 0) {
+
+        uint64_t currentBits = in.getBitCount();
+        uint64_t windowBits = currentBits - last_checkpoint;
+
+        double avg = (double) windowBits / WINDOW;
+
+        std::cout << "Janela decode: "
+                  << avg << " bits/símbolo\n";
+
+        last_checkpoint = currentBits;
+    }
 
     // Atualiza modelo
     ppm_model.update(symbol);
