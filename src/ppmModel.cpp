@@ -21,7 +21,7 @@ void PpmModel::update(const uint16_t &symb) {
   }
 
   // Atualiza contexto
-  if (this->history.size() == this->order && this->order) {
+  if (static_cast<int>(this->history.size()) == this->order && this->order) {
     this->history.pop_back();
   }
   if (this->order) {
@@ -34,4 +34,12 @@ void PpmModel::printModel(const std::string &subctx) {
   for (const auto &[symbol, freq] : (*this->model)[subctx]) {
     std::cout << "  Símbolo: " << symbol << " Frequência: " << freq << "\n";
   }
+}
+
+void PpmModel::reset() {
+  this->model->clear();
+  this->model->rehash(0);
+  
+  delete this->equal_probs;
+  this->equal_probs = new SimpleFrequencyTable(std::vector<uint32_t>(257, 1));
 }

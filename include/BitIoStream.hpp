@@ -10,6 +10,8 @@
 
 #include <istream>
 #include <ostream>
+#include <cstdint>
+#include <iostream>
 
 
 /* 
@@ -29,6 +31,7 @@ class BitInputStream final {
 	// Number of remaining bits in the current byte, always between 0 and 7 (inclusive).
 	private: int numBitsRemaining;
 	
+	public: std::uint64_t bitCount;
 	
 	/*---- Constructor ----*/
 	
@@ -46,6 +49,8 @@ class BitInputStream final {
 	// Reads a bit from this stream. Returns 0 or 1 if a bit is available, or throws an exception
 	// if the end of stream is reached. The end of stream always occurs on a byte boundary.
 	public: int readNoEof();
+
+	std::uint64_t getBitCount();
 	
 };
 
@@ -69,6 +74,7 @@ class BitOutputStream final {
 	// Number of accumulated bits in the current byte, always between 0 and 7 (inclusive).
 	private: int numBitsFilled;
 	
+	public: std::uint64_t bitCount;
 	
 	/*---- Constructor ----*/
 	
@@ -87,5 +93,7 @@ class BitOutputStream final {
 	// partial byte to be written before the underlying stream is closed. Note that this
 	// method merely writes data to the underlying output stream but does not close it.
 	public: void finish();
+
+	std::uint64_t getBitCount();
 	
 };

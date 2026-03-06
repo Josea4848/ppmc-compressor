@@ -6,6 +6,9 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <thread>
+
+#define WINDOW 1000
 
 static void compress(std::ifstream &in, BitOutputStream &out, int order);
 static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
@@ -66,6 +69,9 @@ int main(int argc, char *argv[]) {
 static void compress(std::ifstream &in, BitOutputStream &out, int order) {
   ArithmeticEncoder encoder(32, out);
   PpmModel ppm_model(order);
+  std::uint64_t symbol_count = 0;
+  std::uint64_t checkpoint_1 = 0;
+  std::uint64_t checkpoint_2 = 0;
 
   // Enquanto houver símbolos
   while (true) {
@@ -76,6 +82,30 @@ static void compress(std::ifstream &in, BitOutputStream &out, int order) {
 
     // Codifica com modelo adequado
     encodeModel(ppm_model, encoder, symbol);
+
+    symbol_count++;
+    if (symbol_count % WINDOW == 0) {
+
+        uint64_t currentBits = out.getBitCount();
+        uint64_t current_window = currentBits - checkpoint_1;
+        uint64_t old_window = checkpoint_1 - checkpoint_2;
+
+        double current_avg = (double) current_window / WINDOW;
+        double old_avg = (double) old_window / WINDOW;
+
+        double perc_diff = 0;
+        if(old_avg > 0) {
+          perc_diff = (current_avg - old_avg) / old_avg;
+        }
+        std::cout << "Janela: " << current_avg << " bits/símbolo\n";
+        
+        if(perc_diff > 0.5) {
+          ppm_model.reset();
+          std::this_thread::sleep_for(std::chrono::seconds(2));
+        }
+        checkpoint_2 = checkpoint_1;
+        checkpoint_1 = currentBits;
+    }
 
     // Atualiza modelo
     ppm_model.update(symbol);
@@ -92,7 +122,7 @@ static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
 
   const std::string history = ppm_model.getHistory();
   // Percorre tabelas até k = 0
-  for (int _order = history.size(); _order >= 0; _order--) {
+  for (int _order = static_cast<int>(history.size()); _order >= 0; _order--) {
     std::string_view subctx(history.data(), _order);
     auto model_frequences_it = ppm_model.findModelIt(std::string(subctx));
 
