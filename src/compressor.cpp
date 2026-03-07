@@ -8,13 +8,13 @@
 #include <iostream>
 
 #define WINDOW 300000
-static void compress(std::ifstream &in, BitOutputStream &out, int order);
-static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
-                        uint16_t symbol);
-std::vector<bool> excluded_buffer(258, 1);
-void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
-                  std::vector<uint32_t> &buffer, const uint16_t &symbol,
-                  const bool set_exclusion);
+#define SYMBOL_WINDOW 100000
+
+static void           compress(std::ifstream &in, BitOutputStream &out, int order, std::ofstream &csv_file);
+static void           encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder, uint16_t symbol);
+std::vector<bool>     excluded_buffer(258, 1);
+void                  hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq, std::vector<uint32_t> &buffer, const uint16_t &symbol,
+                                   const bool set_exclusion);
 std::vector<uint32_t> buffer(258, 0);
 
 int main(int argc, char *argv[]) {
@@ -35,19 +35,29 @@ int main(int argc, char *argv[]) {
 
   // Leitura de arquivo de entrada
   const std::string input_file = argv[1];
-  std::ifstream in(input_file, std::ios::binary);
+  std::ifstream     in(input_file, std::ios::binary);
   if (!in) {
     std::cerr << "Erro ao abrir arquivo\n";
   }
 
   // Configuração de stream de saída
-  const std::string ppm_ext = ".ppmc";
+  const std::string ppm_ext     = ".ppmc";
   const std::string output_file = argv[1] + ppm_ext;
-  std::ofstream out(output_file, std::ios::binary);
-  BitOutputStream bout(out);
+  std::ofstream     out(output_file, std::ios::binary);
+  BitOutputStream   bout(out);
+
+  // Criando o nome do arquivo no formato desejado
+  std::string output_filename_csv = "k-" + std::to_string(order) + "-" + input_file + ".csv";
+
+  // Abrindo o arquivo para escrita
+  std::ofstream csv_file(output_filename_csv);
+  if (!csv_file.is_open()) {
+    std::cerr << "Erro ao criar o arquivo: " << output_filename_csv << std::endl;
+    return 1;
+  }
 
   try {
-    compress(in, bout, order);
+    compress(in, bout, order, csv_file);
     bout.finish();
 
     // Fim de execução
@@ -64,12 +74,12 @@ int main(int argc, char *argv[]) {
   }
 }
 
-static void compress(std::ifstream &in, BitOutputStream &out, int order) {
+static void compress(std::ifstream &in, BitOutputStream &out, int order, std::ofstream &csv_file) {
   ArithmeticEncoder encoder(32, out);
-  PpmModel ppm_model(order);
-  std::uint64_t symbol_count = 0;
-  std::uint64_t checkpoint_1 = 0;
-  std::uint64_t checkpoint_2 = 0;
+  PpmModel          ppm_model(order);
+  std::uint64_t     symbol_count = 0;
+  std::uint64_t     checkpoint_1 = 0;
+  std::uint64_t     checkpoint_2 = 0;
 
   // Enquanto houver símbolos
   while (true) {
@@ -84,14 +94,17 @@ static void compress(std::ifstream &in, BitOutputStream &out, int order) {
     ppm_model.update(symbol);
 
     symbol_count++;
-    if (symbol_count % WINDOW == 0) {
+    if (symbol_count % SYMBOL_WINDOW == 0) {
+      csv_file << (double)out.getBitCount() / symbol_count << "," << symbol_count << std::endl;
+    }
 
-      uint64_t currentBits = out.getBitCount();
+    if (symbol_count % WINDOW == 0) {
+      uint64_t currentBits    = out.getBitCount();
       uint64_t current_window = currentBits - checkpoint_1;
-      uint64_t old_window = checkpoint_1 - checkpoint_2;
+      uint64_t old_window     = checkpoint_1 - checkpoint_2;
 
       double current_avg = (double)current_window / WINDOW;
-      double old_avg = (double)old_window / WINDOW;
+      double old_avg     = (double)old_window / WINDOW;
 
       double perc_diff = 0;
 
@@ -112,19 +125,24 @@ static void compress(std::ifstream &in, BitOutputStream &out, int order) {
   };
 
   // Adiciona EOF
+  symbol_count++;
   encodeModel(ppm_model, encoder, 256);
+
+  csv_file << (double)out.getBitCount() / symbol_count << "," << symbol_count << std::endl;
+  csv_file.close();
+
+  std::cout << "Comprimento médio: " << (double)out.getBitCount() / symbol_count << std::endl;
   encoder.finish();
 }
 
-static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
-                        uint16_t symbol) {
+static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder, uint16_t symbol) {
   std::fill(excluded_buffer.begin(), excluded_buffer.end(), 1);
 
   const std::string history = ppm_model.getHistory();
   // Percorre tabelas até k = 0
   for (int _order = static_cast<int>(history.size()); _order >= 0; _order--) {
     std::string_view subctx(history.data(), _order);
-    auto model_frequences_it = ppm_model.findModelIt(std::string(subctx));
+    auto             model_frequences_it = ppm_model.findModelIt(std::string(subctx));
 
     // Verifica se o modelo k = _order existe
     if (model_frequences_it == ppm_model.getModel()->end()) {
@@ -132,9 +150,7 @@ static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
     }
 
     // Se símbolo estiver no modelo
-    if (model_frequences_it->second.find(symbol) !=
-            model_frequences_it->second.end() &&
-        symbol != RO) {
+    if (model_frequences_it->second.find(symbol) != model_frequences_it->second.end() && symbol != RO) {
       hashToVector(model_frequences_it->second, buffer, symbol, false);
       encoder.write(SimpleFrequencyTable(buffer), symbol);
       return;
@@ -150,8 +166,7 @@ static void encodeModel(PpmModel &ppm_model, ArithmeticEncoder &encoder,
   encoder.write(*ppm_model.getInitialModelIt(), symbol);
 }
 
-void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq,
-                  std::vector<uint32_t> &buffer, const uint16_t &symbol,
+void hashToVector(const ankerl::unordered_dense::map<uint16_t, uint32_t> &freq, std::vector<uint32_t> &buffer, const uint16_t &symbol,
                   const bool set_exclusion) {
   std::fill(buffer.begin(), buffer.end(), 0);
   uint32_t counter = 0;
