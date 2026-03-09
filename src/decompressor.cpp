@@ -8,7 +8,7 @@
 #include <iostream>
 #include <limits>
 
-#define WINDOW 300000
+#define WINDOW 450000
 
 static void decompress(BitInputStream &in, std::ostream &out, int order);
 uint32_t decodeModel(PpmModel &ppm_model, ArithmeticDecoder &decoder);

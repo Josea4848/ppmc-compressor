@@ -7,7 +7,7 @@
 #include <fstream>
 #include <iostream>
 
-#define WINDOW 300000
+#define WINDOW 450000
 #define SYMBOL_WINDOW 100000
 
 static void           compress(std::ifstream &in, BitOutputStream &out, int order, std::ofstream &csv_file);
